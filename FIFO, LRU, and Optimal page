@@ -1,0 +1,135 @@
+import sys
+
+# Check if page is present in frame
+def is_present(frames, page):
+    return page in frames
+
+# Print frames along with hit or fault
+def print_frames(frames, is_fault):
+    for f in frames:
+        print(f"{f if f != -1 else ' - ' :>3}", end=" | ")
+    print("[{}]".format("Fault" if is_fault else "Hit"))
+
+# FIFO Algorithm
+def fifo(pages, num_frames):
+    frames = [-1] * num_frames
+    index = 0
+    faults = hits = 0
+
+    print("\nFIFO Page Replacement:")
+    print("+------+---------------------------+")
+    print("| Page |       Frame Table         |")
+    print("+------+---------------------------+")
+
+    for page in pages:
+        is_fault = not is_present(frames, page)
+        if is_fault:
+            frames[index] = page
+            index = (index + 1) % num_frames
+            faults += 1
+        else:
+            hits += 1
+        print(f"| {page:>4} ", end="| ")
+        print_frames(frames, is_fault)
+
+    print("+------+---------------------------+")
+    print(f"Total Page Hits (FIFO): {hits}")
+    print(f"Total Page Faults (FIFO): {faults}")
+
+# LRU Algorithm
+def lru(pages, num_frames):
+    frames = [-1] * num_frames
+    last_used = [-1] * num_frames
+    faults = hits = 0
+
+    print("\nLRU Page Replacement:")
+    print("+------+---------------------------+")
+    print("| Page |       Frame Table         |")
+    print("+------+---------------------------+")
+
+    for i, page in enumerate(pages):
+        found = False
+
+        for j in range(num_frames):
+            if frames[j] == page:
+                last_used[j] = i
+                hits += 1
+                found = True
+                break
+
+        if not found:
+            # Find least recently used
+            if -1 in frames:
+                lru_index = frames.index(-1)
+            else:
+                lru_index = last_used.index(min(last_used))
+            frames[lru_index] = page
+            last_used[lru_index] = i
+            faults += 1
+
+        print(f"| {page:>4} ", end="| ")
+        print_frames(frames, not found)
+
+    print("+------+---------------------------+")
+    print(f"Total Page Hits (LRU): {hits}")
+    print(f"Total Page Faults (LRU): {faults}")
+
+# Optimal Algorithm
+def optimal(pages, num_frames):
+    frames = [-1] * num_frames
+    faults = hits = 0
+
+    print("\nOptimal Page Replacement:")
+    print("+------+---------------------------+")
+    print("| Page |       Frame Table         |")
+    print("+------+---------------------------+")
+
+    for i in range(len(pages)):
+        page = pages[i]
+        found = page in frames
+
+        if found:
+            hits += 1
+        else:
+            if -1 in frames:
+                replace_index = frames.index(-1)
+            else:
+                # Find the farthest used page in the future
+                future_uses = []
+                for frame in frames:
+                    if frame not in pages[i+1:]:
+                        future_uses.append(sys.maxsize)
+                    else:
+                        future_uses.append(pages[i+1:].index(frame))
+                replace_index = future_uses.index(max(future_uses))
+            frames[replace_index] = page
+            faults += 1
+
+        print(f"| {page:>4} ", end="| ")
+        print_frames(frames, not found)
+
+    print("+------+---------------------------+")
+    print(f"Total Page Hits (Optimal): {hits}")
+    print(f"Total Page Faults (Optimal): {faults}")
+
+# Main Driver
+def main():
+    n = int(input("Enter the number of pages: "))
+    pages = list(map(int, input("Enter the reference string: ").split()))
+    num_frames = int(input("Enter the number of frames: "))
+
+    print("\nChoose Page Replacement Policy:")
+    print("1. FIFO\n2. LRU\n3. Optimal")
+    choice = int(input("Enter your choice: "))
+
+    if choice == 1:
+        fifo(pages, num_frames)
+    elif choice == 2:
+        lru(pages, num_frames)
+    elif choice == 3:
+        optimal(pages, num_frames)
+    else:
+        print("Invalid choice!")
+
+if __name__ == "__main__":
+    main()
