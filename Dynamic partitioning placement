@@ -1,0 +1,129 @@
+def input_blocks():
+    block_size = []
+    block_allocated = []
+    block_data = []
+    num_blocks = int(input("Enter number of memory blocks: "))
+    print("Enter sizes of memory blocks:")
+    for _ in range(num_blocks):
+        size = int(input())
+        block_size.append(size)
+        block_allocated.append(0)
+        block_data.append(-1)
+    return block_size, block_allocated, block_data, num_blocks
+
+
+def input_processes():
+    process_size = []
+    process_allocated = []
+    num_processes = int(input("Enter number of processes: "))
+    print("Enter memory required for each process:")
+    for _ in range(num_processes):
+        size = int(input())
+        process_size.append(size)
+        process_allocated.append(-1)
+    return process_size, process_allocated, num_processes
+
+
+def reset_allocation(block_allocated, block_data, process_allocated):
+    for i in range(len(block_allocated)):
+        block_allocated[i] = 0
+        block_data[i] = -1
+    for i in range(len(process_allocated)):
+        process_allocated[i] = -1
+
+
+def first_fit(block_size, block_allocated, block_data, process_size, process_allocated):
+    for i in range(len(process_size)):
+        for j in range(len(block_size)):
+            if not block_allocated[j] and block_size[j] >= process_size[i]:
+                process_allocated[i] = j
+                block_allocated[j] = 1
+                block_data[j] = process_size[i]
+                break
+
+
+def best_fit(block_size, block_allocated, block_data, process_size, process_allocated):
+    for i in range(len(process_size)):
+        best_idx = -1
+        for j in range(len(block_size)):
+            if not block_allocated[j] and block_size[j] >= process_size[i]:
+                if best_idx == -1 or block_size[j] < block_size[best_idx]:
+                    best_idx = j
+        if best_idx != -1:
+            process_allocated[i] = best_idx
+            block_allocated[best_idx] = 1
+            block_data[best_idx] = process_size[i]
+
+
+def worst_fit(block_size, block_allocated, block_data, process_size, process_allocated):
+    for i in range(len(process_size)):
+        worst_idx = -1
+        for j in range(len(block_size)):
+            if not block_allocated[j] and block_size[j] >= process_size[i]:
+                if worst_idx == -1 or block_size[j] > block_size[worst_idx]:
+                    worst_idx = j
+        if worst_idx != -1:
+            process_allocated[i] = worst_idx
+            block_allocated[worst_idx] = 1
+            block_data[worst_idx] = process_size[i]
+
+
+def display_allocations(block_size, block_allocated, block_data, process_size, process_allocated):
+    print("\n--- Process Allocation ---")
+    print("Process No.\tSize\tBlock Allocated")
+    for i in range(len(process_size)):
+        print(f"{i + 1}\t\t{process_size[i]}\t", end="")
+        if process_allocated[i] != -1:
+            print(f"{process_allocated[i] + 1}")
+        else:
+            print("Not Allocated")
+
+    print("\n--- Block Status ---")
+    print("Block No.\tBlock Size\tData Stored")
+    for i in range(len(block_size)):
+        print(f"{i + 1}\t\t{block_size[i]}\t\t", end="")
+        if block_allocated[i]:
+            print(block_data[i])
+        else:
+            print("Empty")
+
+    print("\n--- Unallocated Processes ---")
+    unallocated = False
+    for i in range(len(process_size)):
+        if process_allocated[i] == -1:
+            print(f"Process {i + 1} (Size {process_size[i]}) was not allocated.")
+            unallocated = True
+    if not unallocated:
+        print("All processes were successfully allocated.")
+
+
+def main():
+    print("=== Dynamic Memory Allocation ===")
+    block_size, block_allocated, block_data, num_blocks = input_blocks()
+    process_size, process_allocated, num_processes = input_processes()
+
+    while True:
+        print("\nChoose Allocation Strategy:")
+        print("1. First Fit\n2. Best Fit\n3. Worst Fit\n4. Exit")
+        choice = int(input("Enter choice: "))
+
+        reset_allocation(block_allocated, block_data, process_allocated)
+
+        if choice == 1:
+            first_fit(block_size, block_allocated, block_data, process_size, process_allocated)
+            display_allocations(block_size, block_allocated, block_data, process_size, process_allocated)
+        elif choice == 2:
+            best_fit(block_size, block_allocated, block_data, process_size, process_allocated)
+            display_allocations(block_size, block_allocated, block_data, process_size, process_allocated)
+        elif choice == 3:
+            worst_fit(block_size, block_allocated, block_data, process_size, process_allocated)
+            display_allocations(block_size, block_allocated, block_data, process_size, process_allocated)
+        elif choice == 4:
+            print("Exiting program.")
+            break
+        else:
+            print("Invalid choice. Try again.")
+
+
+if __name__ == "__main__":
+    main()
