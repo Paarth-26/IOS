@@ -1,0 +1,176 @@
+def count_ones(data):
+    return data.count('1')
+
+def generate_parity_bit(data):
+    return '0' if count_ones(data) % 2 == 0 else '1'
+
+def detect_parity_error(sent, received):
+    return generate_parity_bit(sent) != generate_parity_bit(received)
+
+def perform_parity_check():
+    sent = input("Enter sent data (binary): ")
+    parity = generate_parity_bit(sent)
+    print("Parity Bit:", parity)
+    received = input("Enter received data (binary): ")
+    if detect_parity_error(sent, received):
+        print("Error Detected!")
+    else:
+        print("No Error Detected.")
+
+def xor_division(dividend, divisor):
+    dividend = list(dividend)
+    for i in range(len(dividend) - len(divisor) + 1):
+        if dividend[i] == '1':
+            for j in range(len(divisor)):
+                dividend[i + j] = '0' if dividend[i + j] == divisor[j] else '1'
+    return ''.join(dividend[-(len(divisor) - 1):])
+
+def perform_crc_check():
+    sent = input("Enter sent data (binary): ")
+    generator = input("Enter generator polynomial (binary): ")
+    extended = sent + '0' * (len(generator) - 1)
+    crc = xor_division(extended, generator)
+    codeword = sent + crc
+    print("CRC (remainder):", crc)
+    print("Codeword (data + CRC):", codeword)
+    received = input("Enter received data (binary): ")
+    remainder = xor_division(received, generator)
+    if '1' in remainder:
+        print("Error Detected!")
+    else:
+        print("No Error Detected.")
+
+def perform_hamming_code_correction():
+    code = input("Enter received Hamming Code (format: d7,d6,d5,p4,d3,p2,p1): ")
+    code = list(code)
+    if len(code) != 7:
+        print("Invalid Hamming code length.")
+        return
+    p1 = int(code[6]) ^ int(code[4]) ^ int(code[2]) ^ int(code[0])
+    p2 = int(code[5]) ^ int(code[4]) ^ int(code[1]) ^ int(code[0])
+    p4 = int(code[3]) ^ int(code[2]) ^ int(code[1]) ^ int(code[0])
+    error_pos = p4 * 4 + p2 * 2 + p1
+    if error_pos:
+        print(f"Error Detected at position {error_pos}!")
+        idx = 7 - error_pos
+        code[idx] = '0' if code[idx] == '1' else '1'
+        print("Corrected Code:", ''.join(code))
+    else:
+        print("No Error Detected.")
+
+def perform_two_d_parity():
+    rows = int(input("Enter number of rows: "))
+    cols = int(input("Enter number of columns: "))
+    data = []
+    print("Enter binary data row-wise:")
+    for _ in range(rows):
+        row = input()
+        if len(row) != cols:
+            print("Error: Incorrect number of bits in row.")
+            return
+        data.append(row)
+
+    row_parity = [generate_parity_bit(row) for row in data]
+    col_parity = ''
+    for j in range(cols):
+        col_bits = ''.join(row[j] for row in data)
+        col_parity += generate_parity_bit(col_bits)
+    overall_parity = generate_parity_bit(''.join(row_parity))
+
+    print("\nTransmitted Data with Parity:")
+    for i in range(rows):
+        print(f"{data[i]} {row_parity[i]}")
+    print(col_parity + overall_parity)
+
+    print("\nEnter received data with row parity:")
+    received = []
+    for _ in range(rows):
+        row = input()
+        if len(row) != cols + 1:
+            print("Error: Incorrect row length.")
+            return
+        received.append(row)
+
+    received_col_parity = input("Enter received column parity: ")
+    if len(received_col_parity) != cols + 1:
+        print("Error: Incorrect column parity length.")
+        return
+
+    error = False
+    for i in range(rows):
+        ones = received[i][:cols].count('1')
+        expected = generate_parity_bit(received[i][:cols])
+        if expected != received[i][cols]:
+            error = True
+            break
+
+    if not error:
+        for j in range(cols):
+            ones = sum(1 for i in range(rows) if received[i][j] == '1')
+            if generate_parity_bit('1' * ones) != received_col_parity[j]:
+                error = True
+                break
+
+    if not error:
+        ones = sum(1 for i in range(rows) if received[i][cols] == '1')
+        if generate_parity_bit('1' * ones) != received_col_parity[cols]:
+            error = True
+
+    if error:
+        print("\nError detected! Data is corrupted.")
+    else:
+        print("\nNo errors detected. Clean data:")
+        for i in range(rows):
+            print(received[i][:cols])
+
+def perform_checksum():
+    blocks = int(input("Enter number of blocks: "))
+    bits = int(input("Enter number of bits per block: "))
+    data = [input() for _ in range(blocks)]
+    total = sum(int(block, 2) for block in data)
+
+    while total >> bits:
+        total = (total & ((1 << bits) - 1)) + (total >> bits)
+    checksum = (~total) & ((1 << bits) - 1)
+    checksum_bin = format(checksum, f'0{bits}b')
+    print("Checksum:", checksum_bin)
+
+    print("\nAt receiver side:")
+    print("Enter received blocks (including checksum):")
+    received = [input() for _ in range(blocks + 1)]
+    total_recv = sum(int(block, 2) for block in received)
+    while total_recv >> bits:
+        total_recv = (total_recv & ((1 << bits) - 1)) + (total_recv >> bits)
+    if (~total_recv & ((1 << bits) - 1)) == 0:
+        print("No Error Detected.")
+    else:
+        print("Error Detected.")
+
+def main():
+    while True:
+        print("\n--- Error Detection and Correction ---")
+        print("1. Parity Check")
+        print("2. CRC (Cyclic Redundancy Check)")
+        print("3. Hamming Code")
+        print("4. Two-Dimensional Parity Check")
+        print("5. Checksum")
+        print("6. Exit")
+        choice = input("Enter your choice: ")
+        if choice == '1':
+            perform_parity_check()
+        elif choice == '2':
+            perform_crc_check()
+        elif choice == '3':
+            perform_hamming_code_correction()
+        elif choice == '4':
+            perform_two_d_parity()
+        elif choice == '5':
+            perform_checksum()
+        elif choice == '6':
+            print("Exiting...")
+            break
+        else:
+            print("Invalid choice.")
+
+if __name__ == "__main__":
+    main()
