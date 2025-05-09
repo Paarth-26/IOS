@@ -1,0 +1,126 @@
+class Process:
+    def __init__(self, pid, arrival, burst, priority):
+        self.pid = pid
+        self.arrival = arrival
+        self.burst = burst
+        self.priority = priority
+        self.remaining = burst
+        self.start = -1
+        self.completion = 0
+        self.turnaround = 0
+        self.waiting = 0
+        self.response = 0
+        self.is_completed = False
+
+def sort_by_arrival(processes):
+    processes.sort(key=lambda x: x.arrival)
+
+def print_table(processes):
+    print("\nProcess\tPri\tAT\tBT\tCT\tTAT\tWT\tRT")
+    for p in processes:
+        print(f"P{p.pid}\t{p.priority}\t{p.arrival}\t{p.burst}\t{p.completion}"
+              f"\t{p.turnaround}\t{p.waiting}\t{p.response}")
+
+def non_preemptive_priority(processes):
+    sort_by_arrival(processes)
+    time = 0
+    completed = 0
+    n = len(processes)
+
+    print("\nGantt Chart:\n|", end="")
+    while completed < n:
+        idx = -1
+        highest = float('-inf')
+
+        for i in range(n):
+            if processes[i].arrival <= time and not processes[i].is_completed:
+                if processes[i].priority > highest or \
+                   (processes[i].priority == highest and processes[i].arrival < processes[idx].arrival):
+                    highest = processes[i].priority
+                    idx = i
+
+        if idx != -1:
+            p = processes[idx]
+            p.start = time
+            p.completion = time + p.burst
+            p.turnaround = p.completion - p.arrival
+            p.waiting = p.turnaround - p.burst
+            p.response = p.start - p.arrival
+            p.is_completed = True
+            completed += 1
+            time = p.completion
+            print(f" P{p.pid} |", end="")
+        else:
+            time += 1
+    print_table(processes)
+
+def preemptive_priority(processes):
+    sort_by_arrival(processes)
+    time = 0
+    completed = 0
+    prev = -1
+    n = len(processes)
+
+    print("\nGantt Chart:\n|", end="")
+    while completed < n:
+        idx = -1
+        highest = float('-inf')
+
+        for i in range(n):
+            if processes[i].arrival <= time and not processes[i].is_completed:
+                if processes[i].priority > highest or \
+                   (processes[i].priority == highest and processes[i].arrival < processes[idx].arrival):
+                    highest = processes[i].priority
+                    idx = i
+
+        if idx != -1:
+            p = processes[idx]
+            if p.remaining == p.burst:
+                p.start = time
+            p.remaining -= 1
+            if prev != idx:
+                print(f" P{p.pid} |", end="")
+            prev = idx
+            time += 1
+
+            if p.remaining == 0:
+                p.completion = time
+                p.turnaround = p.completion - p.arrival
+                p.waiting = p.turnaround - p.burst
+                p.response = p.start - p.arrival
+                p.is_completed = True
+                completed += 1
+        else:
+            time += 1
+    print_table(processes)
+
+def main():
+    while True:
+        print("\n\n--- CPU Scheduling Algorithms ---")
+        print("1. Non-Preemptive Priority Scheduling (Higher number = higher priority)")
+        print("2. Preemptive Priority Scheduling (Higher number = higher priority)")
+        print("3. Exit")
+        choice = int(input("Enter your choice: "))
+
+        if choice == 3:
+            print("Exiting...")
+            break
+
+        n = int(input("Enter number of processes: "))
+        processes = []
+        for i in range(n):
+            print(f"\nProcess P{i+1}:")
+            at = int(input("Arrival Time: "))
+            bt = int(input("Burst Time: "))
+            pr = int(input("Priority (higher number = higher priority): "))
+            processes.append(Process(i+1, at, bt, pr))
+
+        if choice == 1:
+            non_preemptive_priority(processes)
+        elif choice == 2:
+            preemptive_priority(processes)
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main()
